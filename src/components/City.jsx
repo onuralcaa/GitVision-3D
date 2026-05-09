@@ -39,14 +39,6 @@ export default function City({ repoData, onFileSelect, selectedFile }){
 
   return (
     <group>
-      {/* Ground planes for groups */}
-      {layout.map((l, idx)=> (
-        <mesh key={idx} position={[l.x, -0.01, l.z]} rotation-x={-Math.PI/2}>
-          <planeGeometry args={[8,8]} />
-          <meshStandardMaterial color={new THREE.Color(0x222222)} />
-        </mesh>
-      ))}
-
       {/* Files as boxes */}
       {layout.map((l, gi)=>{
         return l.group.items.map((f, i)=>{

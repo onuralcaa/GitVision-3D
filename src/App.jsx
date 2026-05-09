@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import City from './components/City'
 import Controls from './components/Controls'
+import Sky from './components/Sky'
+import Ground from './components/Ground'
 import { fetchRepoData } from './services/github'
 
 export default function App() {
@@ -47,9 +49,15 @@ export default function App() {
       </header>
 
       <main className="canvas-wrap">
-        <Canvas camera={{ position: [0, 30, 40], fov: 50 }}>
-          <ambientLight intensity={0.6} />
-          <directionalLight position={[10, 20, 10]} intensity={0.8} />
+        <Canvas 
+          camera={{ position: [0, 30, 40], fov: 50 }}
+          style={{ background: 'linear-gradient(180deg, #1a0033 0%, #6b1b47 30%, #ff6b1b 60%, #ffb81b 100%)' }}
+        >
+          <ambientLight intensity={0.4} color="#ffb366" />
+          <directionalLight position={[15, 8, 20]} intensity={1.2} color="#ffaa44" />
+          <directionalLight position={[-15, 15, -20]} intensity={0.3} color="#4488ff" />
+          <Sky />
+          <Ground />
           <Controls />
           {data && <City repoData={data} onFileSelect={setSelectedFile} selectedFile={selectedFile} />}
         </Canvas>
