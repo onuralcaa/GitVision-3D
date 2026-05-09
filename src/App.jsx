@@ -72,6 +72,7 @@ export default function App() {
                 <div><strong>Last Updated:</strong> {new Date(selectedFile.lastCommitDate).toLocaleDateString()}</div>
               )}
             </div>
+            <div className="hint">Hareket etmek için fareyi taşıyın</div>
           </div>
         )}
       </main>

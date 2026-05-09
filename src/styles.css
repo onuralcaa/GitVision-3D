@@ -25,5 +25,6 @@ html,body,#root{height:100%;margin:0;font-family:'Segoe UI', Tahoma, Geneva, Ver
 .info-panel .file-info div{display:flex;flex-direction:column;gap:4px}
 .info-panel .file-info strong{color:#00f2fe;font-weight:600}
 .info-panel code{background:#1a1a1a;padding:4px 6px;border-radius:3px;font-family:monospace;font-size:11px;word-break:break-all;display:block;margin-top:4px}
+.info-panel .hint{margin-top:12px;padding-top:8px;border-top:1px solid #00f2fe;font-size:11px;color:#888;font-style:italic}
 
 
