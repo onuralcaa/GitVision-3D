@@ -8,15 +8,18 @@ export default function App() {
   const [repoUrl, setRepoUrl] = useState('')
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [progress, setProgress] = useState(0)
 
   const handleFetch = async (e) => {
     e.preventDefault()
     try {
       setLoading(true)
+      setProgress(0)
       const parsed = parseRepoUrl(repoUrl)
       if (!parsed) return alert('Geçersiz repo URL')
-      const d = await fetchRepoData(parsed.owner, parsed.repo)
+      const d = await fetchRepoData(parsed.owner, parsed.repo, (p) => setProgress(p))
       setData(d)
+      setProgress(100)
     } catch (err) {
       console.error(err)
       alert(`Hata: ${err.message || 'Veri alınırken hata'}`)
@@ -30,9 +33,16 @@ export default function App() {
       <header className="topbar">
         <form onSubmit={handleFetch}>
           <input value={repoUrl} onChange={e=>setRepoUrl(e.target.value)} placeholder="https://github.com/owner/repo" />
-          <button type="submit">Fetch</button>
+          <button type="submit" disabled={loading}>Fetch</button>
         </form>
-        {loading && <div className="loader">Loading…</div>}
+        {loading && (
+          <div className="loader-container">
+            <span>{progress}%</span>
+            <div className="progress-bar">
+              <div className="progress-fill" style={{width: `${progress}%`}}></div>
+            </div>
+          </div>
+        )}
       </header>
 
       <main className="canvas-wrap">

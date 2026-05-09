@@ -10,10 +10,12 @@ if (!TOKEN) {
 const octokit = new Octokit({ auth: TOKEN || undefined })
 
 // Fetch default branch via GraphQL, then fetch tree via REST for efficiency.
-export async function fetchRepoData(owner, repo){
+export async function fetchRepoData(owner, repo, onProgress = null){
   if (!TOKEN) {
     throw new Error('GitHub token required. Please create a Personal Access Token at https://github.com/settings/tokens and add it to .env file as VITE_GITHUB_TOKEN')
   }
+  
+  if (onProgress) onProgress(5)
   
   // get default branch name via GraphQL
   const q = `query($owner:String!, $name:String!){ repository(owner:$owner, name:$name){ defaultBranchRef{ name } } }`
@@ -23,6 +25,9 @@ export async function fetchRepoData(owner, repo){
   } catch(e) {
     throw new Error(`Failed to fetch repo: ${e.message}`)
   }
+  
+  if (onProgress) onProgress(15)
+  
   const branch = resp.repository.defaultBranchRef ? resp.repository.defaultBranchRef.name : 'main'
 
   // get branch commit to obtain tree sha
@@ -32,6 +37,9 @@ export async function fetchRepoData(owner, repo){
   } catch(e) {
     throw new Error(`Failed to fetch branch info: ${e.message}`)
   }
+  
+  if (onProgress) onProgress(25)
+  
   const treeSha = branchInfo.data.commit.commit.tree.sha
 
   // get recursive tree
@@ -42,13 +50,17 @@ export async function fetchRepoData(owner, repo){
     throw new Error(`Failed to fetch tree: ${e.message}`)
   }
 
+  if (onProgress) onProgress(45)
+
   // collect files (blobs)
   const blobs = (tree.data.tree || []).filter(e=>e.type === 'blob')
 
   // limit to reasonable number to avoid rate limits
   const maxFiles = 400
   const files = []
-  for(const b of blobs.slice(0, maxFiles)){
+  const processedBlobs = Math.min(maxFiles, blobs.length)
+  
+  for(const [idx, b] of blobs.slice(0, maxFiles).entries()){
     const path = b.path
     const size = b.size || 0
     // fetch last commit for this file (REST) - per-file call; may be slow
@@ -61,6 +73,10 @@ export async function fetchRepoData(owner, repo){
       console.debug(`Skipped commit for ${path}: ${e.message}`)
     }
     files.push({ path, size, lastCommitDate })
+    
+    // Update progress: 45% + (45% / total * current)
+    const progressPercentage = 45 + Math.round((45 / processedBlobs) * (idx + 1))
+    if (onProgress) onProgress(Math.min(95, progressPercentage))
   }
 
   return { owner, repo, branch, files }
