@@ -51,11 +51,11 @@ export default function App() {
       <main className="canvas-wrap">
         <Canvas 
           camera={{ position: [0, 30, 40], fov: 50 }}
-          style={{ background: 'linear-gradient(180deg, #1a0033 0%, #6b1b47 30%, #ff6b1b 60%, #ffb81b 100%)' }}
+          style={{ background: 'linear-gradient(180deg, #87ceeb 0%, #b0e0e6 50%, #e0f6ff 100%)' }}
         >
-          <ambientLight intensity={0.4} color="#ffb366" />
-          <directionalLight position={[15, 8, 20]} intensity={1.2} color="#ffaa44" />
-          <directionalLight position={[-15, 15, -20]} intensity={0.3} color="#4488ff" />
+          <ambientLight intensity={0.7} color="#ffffff" />
+          <directionalLight position={[20, 30, 20]} intensity={1.5} color="#ffffe0" />
+          <directionalLight position={[-10, 5, -20]} intensity={0.3} color="#e6f2ff" />
           <Sky />
           <Ground />
           <Controls />

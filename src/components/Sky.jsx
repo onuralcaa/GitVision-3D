@@ -19,30 +19,28 @@ function generateSkyTexture() {
   canvas.height = 512
   const ctx = canvas.getContext('2d')
   
-  // Gün batımı gradient: yukarı mor-pembe, orta turuncu, alt altın-kırmızı
+  // Gündüz gradient: yukarı açık mavi, alt açık mavi-beyaz
   const gradient = ctx.createLinearGradient(0, 0, 0, 512)
   
-  // Üst (gökyüzü): Koyu mor
-  gradient.addColorStop(0, '#1a0033')
-  // Üst-orta: Pembe-mor
-  gradient.addColorStop(0.3, '#6b1b47')
-  // Orta: Turuncu
-  gradient.addColorStop(0.5, '#ff6b1b')
-  // Orta-alt: Altın
-  gradient.addColorStop(0.7, '#ffb81b')
-  // Alt (horizon): Kırmızı-turuncu
-  gradient.addColorStop(1, '#ff4500')
+  // Üst (gökyüzü): Açık mavi
+  gradient.addColorStop(0, '#87ceeb')
+  // Üst-orta: Açık mavi
+  gradient.addColorStop(0.4, '#87ceeb')
+  // Orta: Açık mavi-beyaz
+  gradient.addColorStop(0.6, '#b0e0e6')
+  // Alt (horizon): Çok açık mavi-beyaz
+  gradient.addColorStop(1, '#e0f6ff')
   
   ctx.fillStyle = gradient
   ctx.fillRect(0, 0, 512, 512)
   
   // Bulut efektleri ekle
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.1)'
-  for (let i = 0; i < 20; i++) {
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'
+  for (let i = 0; i < 30; i++) {
     const x = Math.random() * 512
-    const y = Math.random() * 512
-    const w = Math.random() * 60 + 40
-    const h = Math.random() * 20 + 10
+    const y = Math.random() * 200
+    const w = Math.random() * 80 + 50
+    const h = Math.random() * 25 + 15
     ctx.beginPath()
     ctx.ellipse(x, y, w, h, 0, 0, Math.PI * 2)
     ctx.fill()

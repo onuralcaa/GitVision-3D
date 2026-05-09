@@ -20,12 +20,12 @@ function generateGroundTexture() {
   canvas.height = 256
   const ctx = canvas.getContext('2d')
   
-  // Asfalt gri base
-  ctx.fillStyle = '#3a3a3a'
+  // Açık beton/asfalt base
+  ctx.fillStyle = '#a8a8a8'
   ctx.fillRect(0, 0, 256, 256)
   
   // Beton dokusu - kareler
-  ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)'
+  ctx.strokeStyle = 'rgba(100, 100, 100, 0.4)'
   ctx.lineWidth = 2
   const tileSize = 32
   for (let x = 0; x < 256; x += tileSize) {
@@ -35,7 +35,7 @@ function generateGroundTexture() {
   }
   
   // Ayrıntılar - çatlaklar ve pürüzlülük
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'
+  ctx.fillStyle = 'rgba(80, 80, 80, 0.15)'
   for (let i = 0; i < 50; i++) {
     const x = Math.random() * 256
     const y = Math.random() * 256
@@ -44,8 +44,8 @@ function generateGroundTexture() {
     ctx.fillRect(x, y, w, h)
   }
   
-  // Işık yansımaları (gün batımının yansıması)
-  ctx.fillStyle = 'rgba(255, 100, 50, 0.1)'
+  // Işık yansımaları (güneşin yansıması)
+  ctx.fillStyle = 'rgba(255, 255, 200, 0.15)'
   ctx.beginPath()
   ctx.arc(128, 128, 80, 0, Math.PI * 2)
   ctx.fill()
