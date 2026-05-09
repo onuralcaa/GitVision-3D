@@ -9,6 +9,7 @@ export default function App() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [selectedFile, setSelectedFile] = useState(null)
 
   const handleFetch = async (e) => {
     e.preventDefault()
@@ -50,8 +51,21 @@ export default function App() {
           <ambientLight intensity={0.6} />
           <directionalLight position={[10, 20, 10]} intensity={0.8} />
           <Controls />
-          {data && <City repoData={data} />}
+          {data && <City repoData={data} onFileSelect={setSelectedFile} selectedFile={selectedFile} />}
         </Canvas>
+        {selectedFile && (
+          <div className="info-panel">
+            <button className="close-btn" onClick={() => setSelectedFile(null)}>✕</button>
+            <h3>{selectedFile.path.split('/').pop()}</h3>
+            <div className="file-info">
+              <div><strong>Path:</strong> <code>{selectedFile.path}</code></div>
+              <div><strong>Size:</strong> {(selectedFile.size / 1024).toFixed(2)} KB</div>
+              {selectedFile.lastCommitDate && (
+                <div><strong>Last Updated:</strong> {new Date(selectedFile.lastCommitDate).toLocaleDateString()}</div>
+              )}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )
