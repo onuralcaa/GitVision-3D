@@ -48,7 +48,12 @@ export default function App() {
         )}
       </header>
 
-      <main className="canvas-wrap">
+      <main className="canvas-wrap" onClick={(e) => {
+        // Close info panel if clicking canvas area (not on panel itself)
+        if (e.target === e.currentTarget) {
+          setSelectedFile(null)
+        }
+      }}>
         <Canvas 
           camera={{ position: [0, 30, 40], fov: 50 }}
           style={{ background: 'linear-gradient(180deg, #87ceeb 0%, #b0e0e6 50%, #e0f6ff 100%)' }}
