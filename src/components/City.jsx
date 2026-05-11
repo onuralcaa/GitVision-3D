@@ -44,15 +44,27 @@ export default function City({ repoData, onFileSelect }){
     
     raycaster.setFromCamera(mouse, camera)
     
+    // Ensure raycaster covers entire scene
+    raycaster.far = 1000
+    
     // Get all valid meshes from the map
     const validMeshes = Array.from(meshesRef.current.values()).filter(m => m && m.visible && m.parent)
     if (validMeshes.length === 0) return
     
-    const intersects = raycaster.intersectObjects(validMeshes)
+    // Intersect with all meshes recursively
+    const intersects = raycaster.intersectObjects(validMeshes, true)
+    
     let newHoveredPath = null
     
     if (intersects.length > 0) {
-      newHoveredPath = intersects[0].object.userData.file?.path
+      // Find the first valid intersection (closest to camera)
+      for (let i = 0; i < intersects.length; i++) {
+        const obj = intersects[i].object
+        if (obj.userData.file) {
+          newHoveredPath = obj.userData.file.path
+          break
+        }
+      }
     }
     
     // Update materials directly without triggering React re-renders
@@ -105,7 +117,8 @@ export default function City({ repoData, onFileSelect }){
           const rx = (i % perRow) * 1.2 - (perRow/2)
           const rz = Math.floor(i/perRow) * 1.2
           const lines = f.lines || Math.max(1, Math.round((f.size||100)/50))
-          const height = Math.max(0.2, Math.log(lines + 1)) * 1.2
+          // Ensure minimum height to make all buildings clickable
+          const height = Math.max(0.8, Math.log(lines + 1)) * 1.2
           const ageDays = f.lastCommitDate ? (now - new Date(f.lastCommitDate).getTime()) / (1000*60*60*24) : 365
           const t = Math.min(1, ageDays/365)
           
@@ -125,7 +138,7 @@ export default function City({ repoData, onFileSelect }){
                 }
               }}
             >
-              <boxGeometry args={[0.9, height, 0.9]} />
+              <boxGeometry args={[1.0, height, 1.0]} />
               <meshStandardMaterial 
                 color={baseColor}
                 metalness={0.3}
