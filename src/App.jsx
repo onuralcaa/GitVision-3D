@@ -60,7 +60,7 @@ export default function App() {
       setProgress(0)
       setError('')
       const parsed = parseRepoUrl(repoUrl)
-      if (!parsed) return alert('Geçersiz repo URL')
+      if (!parsed) return alert('Invalid repo URL')
       const d = await fetchRepoData(parsed.owner, parsed.repo, (p) => setProgress(p))
       setData(d)
       setShadowsEnabled(true)
