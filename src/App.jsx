@@ -99,7 +99,7 @@ export default function App() {
                 <div><strong>Last Updated:</strong> {new Date(selectedFile.lastCommitDate).toLocaleDateString()}</div>
               )}
             </div>
-            <button className="inspect-btn" onClick={handleInspectFile}>Inspect</button>
+            <button className="inspect-btn" onClick={handleInspectFile}>View</button>
             <div className="hint">Hareket etmek için fareyi taşıyın</div>
           </div>
         )}
