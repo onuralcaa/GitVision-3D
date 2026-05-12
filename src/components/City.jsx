@@ -72,8 +72,6 @@ export default function City({ repoData, onFileSelect, selectedFile }){
               const isCurrentObj = (obj.id === objId)
               console.log(`  ↻ [${isCurrentObj ? '!' : ' '}] Reset ${path} (obj.id: ${objId})`)
               
-              mesh.material.metalness = 0.3
-              mesh.material.roughness = mesh.userData.roughness || 0.6
               mesh.material.emissiveIntensity = 0
               mesh.material.emissive.setHex(0x000000)
               resetCount++
@@ -85,8 +83,6 @@ export default function City({ repoData, onFileSelect, selectedFile }){
           const newMesh = meshesRef.current.get(newFile.path)
           if (newMesh?.material) {
             console.log(`  ✨ Highlighting: ${newFile.path} (obj.id: ${newMesh.id})`)
-            newMesh.material.metalness = 0.8
-            newMesh.material.roughness = 0.2
             newMesh.material.emissiveIntensity = 0.3
             newMesh.material.emissive.setHex(0x00ff88)
           } else {
@@ -137,8 +133,6 @@ export default function City({ repoData, onFileSelect, selectedFile }){
       if (oldPath && oldPath !== selectedFile?.path) {
         const oldMesh = meshesRef.current.get(oldPath)
         if (oldMesh?.material) {
-          oldMesh.material.metalness = 0.3
-          oldMesh.material.roughness = oldMesh.userData.roughness || 0.6
           oldMesh.material.emissiveIntensity = 0
           oldMesh.material.emissive.setHex(0x000000)
         }
@@ -147,8 +141,6 @@ export default function City({ repoData, onFileSelect, selectedFile }){
       if (newHoveredPath && newHoveredPath !== selectedFile?.path) {
         const newMesh = meshesRef.current.get(newHoveredPath)
         if (newMesh?.material) {
-          newMesh.material.metalness = 0.8
-          newMesh.material.roughness = 0.2
           newMesh.material.emissiveIntensity = 0.3
           newMesh.material.emissive.setHex(0x00ff88)
           setHoveredFile(newMesh.userData.file)
@@ -167,8 +159,6 @@ export default function City({ repoData, onFileSelect, selectedFile }){
       // Remove highlights from ALL meshes
       Array.from(meshesRef.current.values()).forEach((mesh) => {
         if (mesh?.material) {
-          mesh.material.metalness = 0.3
-          mesh.material.roughness = mesh.userData.roughness || 0.6
           mesh.material.emissiveIntensity = 0
           mesh.material.emissive.setHex(0x000000)
         }
@@ -183,8 +173,6 @@ export default function City({ repoData, onFileSelect, selectedFile }){
       // First, reset all meshes to normal
       Array.from(meshesRef.current.values()).forEach((mesh) => {
         if (mesh?.material) {
-          mesh.material.metalness = 0.3
-          mesh.material.roughness = mesh.userData.roughness || 0.6
           mesh.material.emissiveIntensity = 0
           mesh.material.emissive.setHex(0x000000)
         }
@@ -194,8 +182,6 @@ export default function City({ repoData, onFileSelect, selectedFile }){
       const selectedMesh = meshesRef.current.get(selectedFile.path)
       if (selectedMesh?.material) {
         console.log('✅ SELECTED FILE CHANGED: Highlighting', selectedFile.path)
-        selectedMesh.material.metalness = 0.8
-        selectedMesh.material.roughness = 0.2
         selectedMesh.material.emissiveIntensity = 0.3
         selectedMesh.material.emissive.setHex(0x00ff88)
       }
@@ -239,12 +225,14 @@ export default function City({ repoData, onFileSelect, selectedFile }){
             <mesh 
               key={f.path} 
               position={[l.x + rx, height/2, l.z + rz]}
+              castShadow
+              receiveShadow
               ref={(mesh) => {
                 if (mesh) {
                   meshesRef.current.set(f.path, mesh)
                   mesh.userData.file = f
-                  // Store roughness for later use
-                  mesh.userData.roughness = t
+                  // Store base color for later use
+                  mesh.userData.baseColor = baseColor
                 }
               }}
             >

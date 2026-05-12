@@ -1,10 +1,30 @@
 import React, { useState } from 'react'
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useThree } from '@react-three/fiber'
 import City from './components/City'
 import Controls from './components/Controls'
 import Sky from './components/Sky'
 import Ground from './components/Ground'
 import { fetchFileContent, fetchRepoData } from './services/github'
+
+function ShadowController() {
+  const { gl } = useThree()
+  React.useEffect(() => {
+    // Initialize shadow map once and keep it stable
+    gl.shadowMap.enabled = true
+    gl.shadowMap.type = 1 // PCFShadowMap
+    // Render shadows once then stabilize
+    gl.shadowMap.autoUpdate = true
+    let frameCount = 0
+    const rafHandle = setInterval(() => {
+      frameCount++
+      if (frameCount > 5) {
+        gl.shadowMap.autoUpdate = false
+      }
+    }, 16)
+    return () => clearInterval(rafHandle)
+  }, [gl])
+  return null
+}
 
 export default function App() {
   const [repoUrl, setRepoUrl] = useState('')
@@ -79,10 +99,12 @@ export default function App() {
         <Canvas 
           camera={{ position: [0, 30, 40], fov: 50 }}
           style={{ background: 'linear-gradient(180deg, #87ceeb 0%, #b0e0e6 50%, #e0f6ff 100%)' }}
+          shadows
         >
           <ambientLight intensity={0.7} color="#ffffff" />
-          <directionalLight position={[20, 30, 20]} intensity={1.5} color="#ffffe0" />
+          <directionalLight position={[20, 30, 20]} intensity={1.5} color="#ffffe0" castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-100} shadow-camera-right={100} shadow-camera-top={100} shadow-camera-bottom={-100} />
           <directionalLight position={[-10, 5, -20]} intensity={0.3} color="#e6f2ff" />
+          <ShadowController />
           <Sky />
           <Ground />
           <Controls />
