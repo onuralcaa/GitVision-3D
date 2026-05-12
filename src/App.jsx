@@ -39,6 +39,7 @@ export default function App() {
   const [showContentModal, setShowContentModal] = useState(false)
   const [error, setError] = useState('')
   const [isMobile, setIsMobile] = useState(false)
+  const [shadowsEnabled, setShadowsEnabled] = useState(false)
 
   useEffect(() => {
     // Detect mobile device
@@ -62,6 +63,7 @@ export default function App() {
       if (!parsed) return alert('Geçersiz repo URL')
       const d = await fetchRepoData(parsed.owner, parsed.repo, (p) => setProgress(p))
       setData(d)
+      setShadowsEnabled(true)
       setProgress(100)
     } catch (err) {
       console.error(err)
@@ -71,6 +73,20 @@ export default function App() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleReset = () => {
+    setRepoUrl('')
+    setData(null)
+    setProgress(0)
+    setSelectedFile(null)
+    setFileContent('')
+    setContentLoading(false)
+    setContentError('')
+    setShowContentModal(false)
+    setError('')
+    setLoading(false)
+    setShadowsEnabled(false)
   }
 
   const handleInspectFile = async () => {
@@ -97,6 +113,7 @@ export default function App() {
         <form onSubmit={handleFetch}>
           <input value={repoUrl} onChange={e=>setRepoUrl(e.target.value)} placeholder="https://github.com/owner/repo" />
           <button type="submit" disabled={loading}>Fetch</button>
+          <button type="button" className="reset-btn" onClick={handleReset} disabled={loading && !data}>Reset</button>
         </form>
         {loading && (
           <div className="loader-container">
@@ -126,10 +143,10 @@ export default function App() {
         <Canvas 
           camera={{ position: [0, 30, 40], fov: 50 }}
           style={{ background: 'linear-gradient(180deg, #87ceeb 0%, #b0e0e6 50%, #e0f6ff 100%)' }}
-          shadows
+          shadows={shadowsEnabled}
         >
           <ambientLight intensity={0.7} color="#ffffff" />
-          <directionalLight position={[20, 30, 20]} intensity={1.5} color="#ffffe0" castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-100} shadow-camera-right={100} shadow-camera-top={100} shadow-camera-bottom={-100} />
+          <directionalLight position={[20, 30, 20]} intensity={1.5} color="#ffffe0" castShadow={shadowsEnabled} shadow-mapSize={[2048, 2048]} shadow-camera-left={-100} shadow-camera-right={100} shadow-camera-top={100} shadow-camera-bottom={-100} />
           <directionalLight position={[-10, 5, -20]} intensity={0.3} color="#e6f2ff" />
           <ShadowController />
           <Sky />

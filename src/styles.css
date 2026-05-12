@@ -7,6 +7,8 @@ html,body,#root{height:100%;margin:0;font-family:'Segoe UI', Tahoma, Geneva, Ver
 .topbar button{padding:8px 14px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:500;transition:opacity 0.2s}
 .topbar button:hover:not(:disabled){opacity:0.9}
 .topbar button:disabled{opacity:0.5;cursor:not-allowed}
+.topbar .reset-btn{background:linear-gradient(135deg, #e53935 0%, #b71c1c 100%);color:#fff}
+.topbar .reset-btn:hover:not(:disabled){opacity:0.95}
 
 /* Error Banner */
 .error-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:linear-gradient(90deg, rgba(220,53,69,0.15) 0%, rgba(220,53,69,0.08) 100%);border-bottom:1px solid rgba(220,53,69,0.4);color:#ff6b6b;font-size:13px;animation:slideDown 0.3s ease}
