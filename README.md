@@ -2,6 +2,10 @@
 
 Transform GitHub repositories into immersive 3D "Code Cities". Each file becomes a building—height represents file size, color represents modification date. Navigate with intuitive 3D controls, click buildings for details, and inspect file contents.
 
+![GitVision 3D Screenshot 1](./GitVision-3d-1.png)
+
+![GitVision 3D Screenshot 2](./GitVision-3d-2.png)
+
 ## Features
 
 - 3D file visualization as interactive buildings
