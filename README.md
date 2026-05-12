@@ -15,6 +15,8 @@ Transform GitHub repositories into immersive 3D "Code Cities". Each file becomes
 - Modal popup to view complete file contents
 - Real-time GitHub repository fetching
 - Progress tracking during data fetch
+- Smart rate limit detection with token reminder
+- Mobile-friendly touch controls (pinch-to-zoom, drag navigation)
 
 ## Tech Stack
 
