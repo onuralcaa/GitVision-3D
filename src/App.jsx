@@ -4,6 +4,7 @@ import City from './components/City'
 import Controls from './components/Controls'
 import Sky from './components/Sky'
 import Ground from './components/Ground'
+import Legend from './components/Legend'
 import { fetchFileContent, fetchRepoData } from './services/github'
 
 function ShadowController() {
@@ -136,6 +137,7 @@ export default function App() {
           <Controls />
           {data && <City repoData={data} onFileSelect={setSelectedFile} selectedFile={selectedFile} />}
         </Canvas>
+        <Legend repoData={data} />
         {selectedFile && (
           <div className="info-panel">
             <button className="close-btn" onClick={() => setSelectedFile(null)}>✕</button>

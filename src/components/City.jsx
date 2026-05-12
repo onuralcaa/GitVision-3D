@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react'
 import { useThree, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { getColorForFileType } from '../utils/fileTypeColors'
 
 export default function City({ repoData, onFileSelect, selectedFile }){
   const { camera, raycaster, mouse } = useThree()
@@ -215,11 +216,10 @@ export default function City({ repoData, onFileSelect, selectedFile }){
           const lines = f.lines || Math.max(1, Math.round((f.size||100)/50))
           // Ensure minimum height to make all buildings clickable
           const height = Math.max(0.8, Math.log(lines + 1)) * 1.2
-          const ageDays = f.lastCommitDate ? (now - new Date(f.lastCommitDate).getTime()) / (1000*60*60*24) : 365
-          const t = Math.min(1, ageDays/365)
           
-          // Base color - aged files get yellow, newer get orange-red
-          const baseColor = new THREE.Color().setHSL(0.12*(1-t), 0.8*(1-t)+0.1, 0.5*(1-t)+0.2)
+          // Get color based on file type
+          const { hex } = getColorForFileType(f.path)
+          const baseColor = new THREE.Color(hex)
           
           return (
             <mesh 
@@ -240,7 +240,7 @@ export default function City({ repoData, onFileSelect, selectedFile }){
               <meshStandardMaterial 
                 color={baseColor}
                 metalness={0.3}
-                roughness={t}
+                roughness={0.7}
                 emissive={0x000000}
                 emissiveIntensity={0}
               />

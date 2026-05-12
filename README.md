@@ -9,7 +9,8 @@ Transform GitHub repositories into immersive 3D "Code Cities". Each file becomes
 ## Features
 
 - 3D file visualization as interactive buildings
-- Dynamic color coding (yellow for old files, orange-red for new)
+- Color-coded by file type (JavaScript, Python, HTML, CSS, etc.)
+- Interactive file type legend on top-left corner
 - Smooth camera controls with mouse navigation
 - File information panel with size and commit date
 - Modal popup to view complete file contents

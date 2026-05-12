@@ -3,7 +3,7 @@ import * as THREE from 'three'
 
 export default function Ground() {
   return (
-    <mesh position={[0, -0.5, 0]} rotation-x={-Math.PI / 2} receiveShadow>
+    <mesh position={[0, 0, 0]} rotation-x={-Math.PI / 2} receiveShadow>
       <planeGeometry args={[200, 200]} />
       <meshStandardMaterial 
         map={generateGroundTexture()}
