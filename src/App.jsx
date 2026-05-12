@@ -36,12 +36,14 @@ export default function App() {
   const [contentLoading, setContentLoading] = useState(false)
   const [contentError, setContentError] = useState('')
   const [showContentModal, setShowContentModal] = useState(false)
+  const [error, setError] = useState('')
 
   const handleFetch = async (e) => {
     e.preventDefault()
     try {
       setLoading(true)
       setProgress(0)
+      setError('')
       const parsed = parseRepoUrl(repoUrl)
       if (!parsed) return alert('Geçersiz repo URL')
       const d = await fetchRepoData(parsed.owner, parsed.repo, (p) => setProgress(p))
@@ -49,7 +51,9 @@ export default function App() {
       setProgress(100)
     } catch (err) {
       console.error(err)
-      alert(`Hata: ${err.message || 'Veri alınırken hata'}`)
+      const errorMsg = err.message || 'Veri alınırken hata'
+      setError(errorMsg)
+      setData(null)
     } finally {
       setLoading(false)
     }
@@ -89,6 +93,15 @@ export default function App() {
           </div>
         )}
       </header>
+      
+      {error && (
+        <div className="error-banner">
+          <div className="error-content">
+            <strong>GitHub API Hatası:</strong> {error}
+          </div>
+          <button className="error-close" onClick={() => setError('')}>✕</button>
+        </div>
+      )}
 
       <main className="canvas-wrap" onClick={(e) => {
         // Close info panel if clicking canvas area (not on panel itself)

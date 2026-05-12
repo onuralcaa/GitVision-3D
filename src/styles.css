@@ -7,6 +7,15 @@ html,body,#root{height:100%;margin:0;font-family:'Segoe UI', Tahoma, Geneva, Ver
 .topbar button{padding:8px 14px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:500;transition:opacity 0.2s}
 .topbar button:hover:not(:disabled){opacity:0.9}
 .topbar button:disabled{opacity:0.5;cursor:not-allowed}
+
+/* Error Banner */
+.error-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:linear-gradient(90deg, rgba(220,53,69,0.15) 0%, rgba(220,53,69,0.08) 100%);border-bottom:1px solid rgba(220,53,69,0.4);color:#ff6b6b;font-size:13px;animation:slideDown 0.3s ease}
+@keyframes slideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
+.error-content{flex:1;word-break:break-word}
+.error-content strong{color:#ff8787;font-weight:700}
+.error-close{background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:18px;padding:4px 8px;transition:color 0.2s;flex-shrink:0}
+.error-close:hover{color:#ff8787}
+
 .canvas-wrap{flex:1;position:relative;background:#0a0a0a;overflow:hidden}
 .loader-container{display:flex;gap:8px;align-items:center;min-width:200px}
 .loader-container span{font-size:12px;min-width:35px;font-weight:600}

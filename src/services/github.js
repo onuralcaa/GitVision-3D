@@ -9,6 +9,25 @@ if (!TOKEN) {
 
 const octokit = new Octokit({ auth: TOKEN || undefined })
 
+// Check rate limit status from response headers
+function checkRateLimit(response) {
+  const remaining = response.headers['x-ratelimit-remaining']
+  const limit = response.headers['x-ratelimit-limit']
+  const reset = response.headers['x-ratelimit-reset']
+  
+  if (remaining === '0' || parseInt(remaining) === 0) {
+    const resetDate = new Date(parseInt(reset) * 1000)
+    const waitTime = resetDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+    const errorMsg = `GitHub API rate limit exceeded. Token eklemelisiniz. Limit sıfırlanacağı zaman: ${waitTime}`
+    throw new Error(errorMsg)
+  }
+  
+  // Warn if limit is running low
+  if (parseInt(remaining) < 50) {
+    console.warn(`⚠️ GitHub API rate limit running low: ${remaining}/${limit} requests remaining`)
+  }
+}
+
 // Fetch default branch via GraphQL, then fetch tree via REST for efficiency.
 export async function fetchRepoData(owner, repo, onProgress = null){
   if (!TOKEN) {
@@ -23,6 +42,9 @@ export async function fetchRepoData(owner, repo, onProgress = null){
   try {
     resp = await octokit.graphql(q, { owner, name: repo })
   } catch(e) {
+    if (e.status === 403 || e.message.includes('API rate limit')) {
+      throw new Error(`GitHub API rate limit exceeded. Token eklemelisiniz. Lütfen GitHub Personal Access Token oluşturun: https://github.com/settings/tokens`)
+    }
     throw new Error(`Failed to fetch repo: ${e.message}`)
   }
   
@@ -34,7 +56,14 @@ export async function fetchRepoData(owner, repo, onProgress = null){
   let branchInfo
   try {
     branchInfo = await octokit.request('GET /repos/{owner}/{repo}/branches/{branch}', { owner, repo, branch })
+    checkRateLimit(branchInfo)
   } catch(e) {
+    if (e.message.includes('rate limit')) {
+      throw e
+    }
+    if (e.status === 403) {
+      throw new Error(`GitHub API rate limit exceeded. Token eklemelisiniz. Lütfen GitHub Personal Access Token oluşturun: https://github.com/settings/tokens`)
+    }
     throw new Error(`Failed to fetch branch info: ${e.message}`)
   }
   
@@ -46,7 +75,14 @@ export async function fetchRepoData(owner, repo, onProgress = null){
   let tree
   try {
     tree = await octokit.request('GET /repos/{owner}/{repo}/git/trees/{tree_sha}?recursive=1', { owner, repo, tree_sha: treeSha })
+    checkRateLimit(tree)
   } catch(e) {
+    if (e.message.includes('rate limit')) {
+      throw e
+    }
+    if (e.status === 403) {
+      throw new Error(`GitHub API rate limit exceeded. Token eklemelisiniz. Lütfen GitHub Personal Access Token oluşturun: https://github.com/settings/tokens`)
+    }
     throw new Error(`Failed to fetch tree: ${e.message}`)
   }
 
@@ -67,8 +103,12 @@ export async function fetchRepoData(owner, repo, onProgress = null){
     let lastCommitDate = null
     try{
       const commits = await octokit.request('GET /repos/{owner}/{repo}/commits', { owner, repo, path, per_page: 1 })
+      checkRateLimit(commits)
       if(commits.data && commits.data[0]) lastCommitDate = commits.data[0].commit.committer?.date || commits.data[0].commit.author?.date
     }catch(e){ 
+      if (e.message.includes('rate limit')) {
+        throw e
+      }
       // silently ignore per-file commit fetches; they can fail if token has limited scopes
       console.debug(`Skipped commit for ${path}: ${e.message}`)
     }
@@ -97,6 +137,8 @@ export async function fetchFileContent(owner, repo, path, branch){
         accept: 'application/vnd.github.raw+json'
       }
     })
+    
+    checkRateLimit(response)
 
     if (typeof response.data === 'string') {
       return response.data
@@ -108,6 +150,12 @@ export async function fetchFileContent(owner, repo, path, branch){
 
     return ''
   } catch (e) {
+    if (e.message.includes('rate limit')) {
+      throw e
+    }
+    if (e.status === 403) {
+      throw new Error(`GitHub API rate limit exceeded. Token eklemelisiniz. Lütfen GitHub Personal Access Token oluşturun: https://github.com/settings/tokens`)
+    }
     throw new Error(`Failed to fetch file content: ${e.message}`)
   }
 }
