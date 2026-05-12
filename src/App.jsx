@@ -4,7 +4,7 @@ import City from './components/City'
 import Controls from './components/Controls'
 import Sky from './components/Sky'
 import Ground from './components/Ground'
-import { fetchRepoData } from './services/github'
+import { fetchFileContent, fetchRepoData } from './services/github'
 
 export default function App() {
   const [repoUrl, setRepoUrl] = useState('')
@@ -12,6 +12,10 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [selectedFile, setSelectedFile] = useState(null)
+  const [fileContent, setFileContent] = useState('')
+  const [contentLoading, setContentLoading] = useState(false)
+  const [contentError, setContentError] = useState('')
+  const [showContentModal, setShowContentModal] = useState(false)
 
   const handleFetch = async (e) => {
     e.preventDefault()
@@ -28,6 +32,24 @@ export default function App() {
       alert(`Hata: ${err.message || 'Veri alınırken hata'}`)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleInspectFile = async () => {
+    if (!data || !selectedFile) return
+
+    try {
+      setContentLoading(true)
+      setContentError('')
+      setShowContentModal(true)
+      const content = await fetchFileContent(data.owner, data.repo, selectedFile.path, data.branch)
+      setFileContent(content)
+    } catch (err) {
+      console.error(err)
+      setContentError(err.message || 'Dosya içeriği alınamadı')
+      setFileContent('')
+    } finally {
+      setContentLoading(false)
     }
   }
 
@@ -77,7 +99,20 @@ export default function App() {
                 <div><strong>Last Updated:</strong> {new Date(selectedFile.lastCommitDate).toLocaleDateString()}</div>
               )}
             </div>
+            <button className="inspect-btn" onClick={handleInspectFile}>Inspect</button>
             <div className="hint">Hareket etmek için fareyi taşıyın</div>
+          </div>
+        )}
+        {showContentModal && (
+          <div className="content-modal-backdrop" onClick={() => setShowContentModal(false)}>
+            <div className="content-modal" onClick={(e) => e.stopPropagation()}>
+              <button type="button" className="modal-close-btn" onClick={() => setShowContentModal(false)}>✕</button>
+              <h3>{selectedFile?.path?.split('/').pop()}</h3>
+              <div className="modal-path">{selectedFile?.path}</div>
+              <pre className="modal-content">
+                {contentLoading ? 'Loading...' : contentError || fileContent || 'No content available.'}
+              </pre>
+            </div>
           </div>
         )}
       </main>

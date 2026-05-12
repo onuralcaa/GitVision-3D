@@ -81,3 +81,33 @@ export async function fetchRepoData(owner, repo, onProgress = null){
 
   return { owner, repo, branch, files }
 }
+
+export async function fetchFileContent(owner, repo, path, branch){
+  if (!TOKEN) {
+    throw new Error('GitHub token required. Please create a Personal Access Token at https://github.com/settings/tokens and add it to .env file as VITE_GITHUB_TOKEN')
+  }
+
+  try {
+    const response = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
+      owner,
+      repo,
+      path,
+      ref: branch,
+      headers: {
+        accept: 'application/vnd.github.raw+json'
+      }
+    })
+
+    if (typeof response.data === 'string') {
+      return response.data
+    }
+
+    if (response.data?.content) {
+      return atob(response.data.content.replace(/\n/g, ''))
+    }
+
+    return ''
+  } catch (e) {
+    throw new Error(`Failed to fetch file content: ${e.message}`)
+  }
+}
