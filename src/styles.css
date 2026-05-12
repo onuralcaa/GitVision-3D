@@ -46,4 +46,190 @@ html,body,#root{height:100%;margin:0;font-family:'Segoe UI', Tahoma, Geneva, Ver
 .modal-path{font-size:12px;color:#9aa7b1;word-break:break-all}
 .modal-content{margin:0;flex:1;overflow:auto;background:#0a0a0a;border:1px solid #222;border-radius:8px;padding:16px;color:#e8f1f3;font-family:'Consolas','Courier New',monospace;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
 
+/* Mobile Responsive Design */
+@media (max-width: 768px) {
+  .topbar {
+    padding: 10px 12px;
+  }
+  
+  .topbar form {
+    max-width: 100%;
+  }
+  
+  .topbar input,
+  .topbar button {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+  
+  .loader-container {
+    flex-direction: column;
+    min-width: auto;
+    gap: 6px;
+  }
+  
+  .info-panel {
+    bottom: 12px;
+    right: 12px;
+    max-width: calc(100% - 24px);
+    padding: 14px;
+    font-size: 13px;
+  }
+  
+  .info-panel h3 {
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+  
+  .info-panel .close-btn {
+    font-size: 16px;
+    padding: 3px;
+  }
+  
+  .info-panel .file-info {
+    gap: 6px;
+    font-size: 11px;
+  }
+  
+  .info-panel code {
+    font-size: 10px;
+    padding: 3px 5px;
+  }
+  
+  .info-panel .inspect-btn {
+    margin-top: 10px;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  
+  .info-panel .hint {
+    margin-top: 10px;
+    padding-top: 6px;
+    font-size: 10px;
+  }
+  
+  .content-modal-backdrop {
+    padding: 16px;
+  }
+  
+  .content-modal {
+    width: min(100%, 95vw);
+    max-height: min(85vh, 800px);
+    padding: 16px 16px 12px;
+    gap: 8px;
+  }
+  
+  .content-modal h3 {
+    font-size: 16px;
+    padding-right: 36px;
+  }
+  
+  .modal-close-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+    top: 8px;
+    right: 8px;
+  }
+  
+  .modal-path {
+    font-size: 11px;
+  }
+  
+  .modal-content {
+    padding: 12px;
+    font-size: 11px;
+  }
+}
 
+@media (max-width: 480px) {
+  html, body, #root {
+    font-size: 14px;
+  }
+  
+  .topbar {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  
+  .topbar form {
+    flex-wrap: wrap;
+  }
+  
+  .topbar input,
+  .topbar button {
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+  
+  .topbar button {
+    min-height: 32px;
+  }
+  
+  .info-panel {
+    bottom: 10px;
+    right: 10px;
+    max-width: calc(100% - 20px);
+    padding: 12px;
+  }
+  
+  .info-panel h3 {
+    font-size: 13px;
+  }
+  
+  .info-panel .file-info {
+    font-size: 10px;
+  }
+  
+  .error-banner {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  
+  .content-modal {
+    padding: 14px 14px 10px;
+  }
+  
+  .content-modal h3 {
+    font-size: 14px;
+  }
+  
+  .modal-content {
+    padding: 10px;
+    font-size: 10px;
+  }
+  
+  /* Better touch targets on mobile */
+  button, input {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Touch-friendly hover states */
+@media (hover: none) and (pointer: coarse) {
+  .topbar button:not(:disabled) {
+    opacity: 0.8;
+  }
+  
+  .topbar button:active:not(:disabled) {
+    opacity: 1;
+  }
+  
+  .info-panel .inspect-btn {
+    opacity: 0.9;
+  }
+  
+  .info-panel .inspect-btn:active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  .modal-close-btn {
+    opacity: 0.85;
+  }
+  
+  .modal-close-btn:active {
+    opacity: 1;
+  }
+}

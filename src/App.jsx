@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import City from './components/City'
 import Controls from './components/Controls'
@@ -37,6 +37,19 @@ export default function App() {
   const [contentError, setContentError] = useState('')
   const [showContentModal, setShowContentModal] = useState(false)
   const [error, setError] = useState('')
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    // Detect mobile device
+    const checkMobile = () => {
+      const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      setIsMobile(mobile)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   const handleFetch = async (e) => {
     e.preventDefault()
@@ -135,7 +148,9 @@ export default function App() {
               )}
             </div>
             <button className="inspect-btn" onClick={handleInspectFile}>View</button>
-            <div className="hint">Hareket etmek için fareyi taşıyın</div>
+            <div className="hint">
+              {isMobile ? 'Dokunup sürükleyin / İki parmakla yakınlaştırın' : 'Hareket etmek için fareyi taşıyın'}
+            </div>
           </div>
         )}
         {showContentModal && (
