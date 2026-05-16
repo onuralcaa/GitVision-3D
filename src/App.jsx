@@ -178,11 +178,23 @@ export default function App() {
     setTlIndex(valOrFn)
   }, [])
 
+  // Called by City's useFrame when buildings have settled and dwell time elapsed
+  const handleAdvanceCommit = useCallback(() => {
+    setTlIndex(prev => {
+      const next = prev + 1
+      if (!snapshots || next >= snapshots.length) {
+        // Reached the end — stop playback
+        setTlPlaying(false)
+        return prev
+      }
+      return next
+    })
+  }, [snapshots])
+
   // Current snapshot to pass to City (null = show current repo state)
   const activeSnapshot = showTimelapse && snapshots && snapshots.length > 0
     ? snapshots[tlIndex]
     : null
-
   return (
     <div className="app-root">
       <header className="topbar">
@@ -279,6 +291,9 @@ export default function App() {
               onFileSelect={setSelectedFile}
               selectedFile={selectedFile}
               timelapseSnapshot={activeSnapshot}
+              isPlaying={tlPlaying}
+              tlSpeed={tlSpeed}
+              onAdvanceCommit={handleAdvanceCommit}
             />
           )}
         </Canvas>

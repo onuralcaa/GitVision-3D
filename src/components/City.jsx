@@ -9,16 +9,44 @@ function computeHeight(sizeBytes) {
   return Math.max(0.8, Math.log(lines + 1)) * 1.2
 }
 
-export default function City({ repoData, onFileSelect, selectedFile, timelapseSnapshot }) {
+// A box geometry whose bottom face sits exactly at y=0.
+// Translated up by 0.5 so the unit cube spans [0,1] on Y.
+// The mesh stays at position.y = 0 forever — only scale.y changes.
+// Shadow footprint (XZ) never moves.
+const UNIT_BOX = new THREE.BoxGeometry(1, 1, 1)
+UNIT_BOX.translate(0, 0.5, 0)
+
+// Fraction of remaining distance below which a building is considered "settled"
+const SETTLE_THRESHOLD = 0.015
+
+// Exponential ease-out speed (units/second). Fast enough to finish well within
+// the dwell window, slow enough to look like a smooth grow.
+const LERP_SPEED = 8
+
+export default function City({
+  repoData,
+  onFileSelect,
+  selectedFile,
+  timelapseSnapshot,
+  // Playback props — the frame loop drives commit advancing so animation
+  // always completes before the next snapshot is applied.
+  isPlaying,
+  tlSpeed,
+  onAdvanceCommit,
+}) {
   const { camera, raycaster, mouse } = useThree()
   const [hoveredFile, setHoveredFile] = useState(null)
-  const meshesRef = useRef(new Map())       // Map<path, THREE.Mesh>
-  const targetHeightsRef = useRef(new Map()) // Map<path, number>  — driven by snapshot
-  const mousePos = useRef({ x: 0, y: 0 })
-  const lastHoveredRef = useRef(null)
+  const meshesRef        = useRef(new Map())  // Map<path, THREE.Mesh>
+  const targetHeightsRef = useRef(new Map())  // Map<path, number>
+  const mousePos         = useRef({ x: 0, y: 0 })
+  const lastHoveredRef   = useRef(null)
   const previousSelectedRef = useRef(null)
 
-  // ── Layout (stable; based on the full file list from repoData) ─────────────
+  // How long (seconds) we have been dwelling on the current settled state
+  const dwellRef   = useRef(0)
+  const settledRef = useRef(true)
+
+  // ── Layout ─────────────────────────────────────────────────────────────────
   const groups = useMemo(() => {
     const map = new Map()
     for (const file of repoData.files) {
@@ -33,63 +61,81 @@ export default function City({ repoData, onFileSelect, selectedFile, timelapseSn
   const layout = useMemo(() => {
     const cols = Math.ceil(Math.sqrt(groups.length))
     const spacing = 10
-    return groups.map((g, i) => {
-      const gx = (i % cols) * spacing
-      const gz = Math.floor(i / cols) * spacing
-      return { group: g, x: gx, z: gz }
-    })
+    return groups.map((g, i) => ({
+      group: g,
+      x: (i % cols) * spacing,
+      z: Math.floor(i / cols) * spacing,
+    }))
   }, [groups])
 
-  // ── Sync target heights whenever the timelapse snapshot changes ────────────
+  // ── Sync target heights on snapshot change ─────────────────────────────────
   useEffect(() => {
+    // Reset dwell so we always animate fully before advancing
+    dwellRef.current   = 0
+    settledRef.current = false
+
     if (!timelapseSnapshot) {
-      // No timelapse active — use the current repoData sizes for all files
       for (const file of repoData.files) {
         targetHeightsRef.current.set(file.path, computeHeight(file.size))
       }
     } else {
-      // Timelapse active — files present in snapshot get their snapshot size;
-      // files NOT in snapshot get height 0 (not yet created)
       for (const file of repoData.files) {
         const snap = timelapseSnapshot.files.get(file.path)
-        if (snap) {
-          targetHeightsRef.current.set(file.path, computeHeight(snap.size))
-        } else {
-          targetHeightsRef.current.set(file.path, 0)
-        }
+        targetHeightsRef.current.set(file.path, snap ? computeHeight(snap.size) : 0)
       }
     }
   }, [timelapseSnapshot, repoData])
 
-  // ── Animate buildings toward their target heights every frame ──────────────
+  // ── Main frame loop: animate buildings + drive playback advance ────────────
   useFrame((_, delta) => {
-    const lerpSpeed = 6 // units per second — controls grow animation speed
+    // Clamp delta to avoid huge jumps after tab switches
+    const dt = Math.min(delta, 0.1)
+
+    let allSettled = true
 
     for (const [path, mesh] of meshesRef.current) {
       if (!mesh) continue
 
-      const target = targetHeightsRef.current.get(path) ?? computeHeight(
-        repoData.files.find(f => f.path === path)?.size ?? 100
-      )
+      const target  = targetHeightsRef.current.get(path)
+        ?? computeHeight(repoData.files.find(f => f.path === path)?.size ?? 100)
+      const current = mesh.scale.y
+      const diff    = target - current
 
-      const currentScaleY = mesh.scale.y
-      // scale.y maps 1 → full height; we store full height in userData.baseHeight
-      const baseHeight = mesh.userData.baseHeight || 1
-      const currentHeight = currentScaleY * baseHeight
-      const newHeight = THREE.MathUtils.lerp(currentHeight, target, Math.min(1, lerpSpeed * delta))
-
-      if (Math.abs(newHeight - currentHeight) > 0.001) {
-        const scaleY = newHeight / baseHeight
-        mesh.scale.y = scaleY
-        // Keep the building sitting on the ground: center at height/2
-        mesh.position.y = newHeight / 2
+      if (Math.abs(diff) > 0.001) {
+        // Exponential ease-out — smooth deceleration as it approaches target
+        mesh.scale.y = current + diff * Math.min(1, LERP_SPEED * dt)
+        allSettled   = false
+      } else if (current !== target) {
+        mesh.scale.y = target  // snap the last micro-gap
       }
 
-      // Show/hide based on whether the building has any height.
-      // Also toggle castShadow so hidden buildings don't cast ghost shadows.
-      const isVisible = newHeight > 0.05
-      mesh.visible = isVisible
-      mesh.castShadow = isVisible
+      // Secondary settle check: fraction of remaining distance
+      const remaining = Math.abs(target - mesh.scale.y) / Math.max(0.001, Math.abs(target || 1))
+      if (remaining > SETTLE_THRESHOLD) allSettled = false
+
+      // Visibility + shadow in sync
+      const isVisible = mesh.scale.y > 0.05
+      if (mesh.visible !== isVisible) {
+        mesh.visible    = isVisible
+        mesh.castShadow = isVisible
+      }
+    }
+
+    settledRef.current = allSettled
+
+    // ── Playback advance ────────────────────────────────────────────────────
+    // Advance only after buildings have settled AND a minimum dwell has passed.
+    // dwell = 1s / speed, floored at 0.15s so fast speeds still look smooth.
+    if (isPlaying && onAdvanceCommit) {
+      const dwellTime = Math.max(0.15, 1 / (tlSpeed ?? 1))
+      if (allSettled) {
+        dwellRef.current += dt
+        if (dwellRef.current >= dwellTime) {
+          dwellRef.current = 0
+          onAdvanceCommit()
+        }
+      }
+      // Not settled → dwell stays at 0, we wait for animation to finish
     }
 
     // ── Hover raycasting ────────────────────────────────────────────────────
@@ -103,35 +149,26 @@ export default function City({ repoData, onFileSelect, selectedFile, timelapseSn
     const validMeshes = Array.from(meshesRef.current.values()).filter(
       m => m && m.visible && m.parent
     )
-    if (validMeshes.length === 0) return
+    if (!validMeshes.length) return
 
     const intersects = raycaster.intersectObjects(validMeshes, true)
-
     let newHoveredPath = null
-    if (intersects.length > 0) {
-      for (const hit of intersects) {
-        if (hit.object.userData.file) {
-          newHoveredPath = hit.object.userData.file.path
-          break
-        }
-      }
+    for (const hit of intersects) {
+      if (hit.object.userData.file) { newHoveredPath = hit.object.userData.file.path; break }
     }
 
     const oldPath = lastHoveredRef.current?.path
     if (oldPath !== newHoveredPath) {
       if (oldPath && oldPath !== selectedFile?.path) {
-        const oldMesh = meshesRef.current.get(oldPath)
-        if (oldMesh?.material) {
-          oldMesh.material.emissiveIntensity = 0
-          oldMesh.material.emissive.setHex(0x000000)
-        }
+        const m = meshesRef.current.get(oldPath)
+        if (m?.material) { m.material.emissiveIntensity = 0; m.material.emissive.setHex(0x000000) }
       }
       if (newHoveredPath && newHoveredPath !== selectedFile?.path) {
-        const newMesh = meshesRef.current.get(newHoveredPath)
-        if (newMesh?.material) {
-          newMesh.material.emissiveIntensity = 0.3
-          newMesh.material.emissive.setHex(0x00ff88)
-          setHoveredFile(newMesh.userData.file)
+        const m = meshesRef.current.get(newHoveredPath)
+        if (m?.material) {
+          m.material.emissiveIntensity = 0.3
+          m.material.emissive.setHex(0x00ff88)
+          setHoveredFile(m.userData.file)
         }
       } else {
         setHoveredFile(null)
@@ -140,64 +177,44 @@ export default function City({ repoData, onFileSelect, selectedFile, timelapseSn
     }
   })
 
-  // ── Click handler ──────────────────────────────────────────────────────────
-  const handlePointerMove = (event) => {
-    mousePos.current.x = (event.clientX / window.innerWidth) * 2 - 1
-    mousePos.current.y = -(event.clientY / window.innerHeight) * 2 + 1
+  // ── Pointer / click handlers ───────────────────────────────────────────────
+  const handlePointerMove = (e) => {
+    mousePos.current.x =  (e.clientX / window.innerWidth)  * 2 - 1
+    mousePos.current.y = -(e.clientY / window.innerHeight) * 2 + 1
   }
 
-  const handleClick = (event) => {
-    mousePos.current.x = (event.clientX / window.innerWidth) * 2 - 1
-    mousePos.current.y = -(event.clientY / window.innerHeight) * 2 + 1
-
+  const handleClick = (e) => {
+    mousePos.current.x =  (e.clientX / window.innerWidth)  * 2 - 1
+    mousePos.current.y = -(e.clientY / window.innerHeight) * 2 + 1
     mouse.x = mousePos.current.x
     mouse.y = mousePos.current.y
     raycaster.setFromCamera(mouse, camera)
 
-    const validMeshes = Array.from(meshesRef.current.values()).filter(
-      m => m && m.visible && m.parent
-    )
-    if (validMeshes.length === 0) return
+    const validMeshes = Array.from(meshesRef.current.values()).filter(m => m && m.visible && m.parent)
+    if (!validMeshes.length) return
 
     const intersects = raycaster.intersectObjects(validMeshes, true)
-    if (intersects.length > 0) {
-      for (const hit of intersects) {
-        const obj = hit.object
-        if (obj.userData.file) {
-          const newFile = obj.userData.file
-
-          // Reset all highlights
-          for (const mesh of meshesRef.current.values()) {
-            if (mesh?.material) {
-              mesh.material.emissiveIntensity = 0
-              mesh.material.emissive.setHex(0x000000)
-            }
-          }
-
-          // Highlight clicked
-          const clickedMesh = meshesRef.current.get(newFile.path)
-          if (clickedMesh?.material) {
-            clickedMesh.material.emissiveIntensity = 0.3
-            clickedMesh.material.emissive.setHex(0x00ff88)
-          }
-
-          onFileSelect(newFile)
-          previousSelectedRef.current = newFile
-          event.stopPropagation()
-          break
+    for (const hit of intersects) {
+      if (hit.object.userData.file) {
+        const newFile = hit.object.userData.file
+        for (const m of meshesRef.current.values()) {
+          if (m?.material) { m.material.emissiveIntensity = 0; m.material.emissive.setHex(0x000000) }
         }
+        const cm = meshesRef.current.get(newFile.path)
+        if (cm?.material) { cm.material.emissiveIntensity = 0.3; cm.material.emissive.setHex(0x00ff88) }
+        onFileSelect(newFile)
+        previousSelectedRef.current = newFile
+        e.stopPropagation()
+        break
       }
     }
   }
 
-  // ── Selection highlight effects ────────────────────────────────────────────
+  // ── Selection highlight ────────────────────────────────────────────────────
   useEffect(() => {
     if (!selectedFile && previousSelectedRef.current) {
-      for (const mesh of meshesRef.current.values()) {
-        if (mesh?.material) {
-          mesh.material.emissiveIntensity = 0
-          mesh.material.emissive.setHex(0x000000)
-        }
+      for (const m of meshesRef.current.values()) {
+        if (m?.material) { m.material.emissiveIntensity = 0; m.material.emissive.setHex(0x000000) }
       }
       previousSelectedRef.current = null
     }
@@ -205,28 +222,18 @@ export default function City({ repoData, onFileSelect, selectedFile, timelapseSn
 
   useEffect(() => {
     if (selectedFile) {
-      for (const mesh of meshesRef.current.values()) {
-        if (mesh?.material) {
-          mesh.material.emissiveIntensity = 0
-          mesh.material.emissive.setHex(0x000000)
-        }
+      for (const m of meshesRef.current.values()) {
+        if (m?.material) { m.material.emissiveIntensity = 0; m.material.emissive.setHex(0x000000) }
       }
       const sel = meshesRef.current.get(selectedFile.path)
-      if (sel?.material) {
-        sel.material.emissiveIntensity = 0.3
-        sel.material.emissive.setHex(0x00ff88)
-      }
+      if (sel?.material) { sel.material.emissiveIntensity = 0.3; sel.material.emissive.setHex(0x00ff88) }
     }
   }, [selectedFile?.path])
 
   // ── Cleanup ────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    return () => {
-      for (const mesh of meshesRef.current.values()) {
-        mesh?.material?.dispose()
-      }
-      meshesRef.current.clear()
-    }
+  useEffect(() => () => {
+    for (const m of meshesRef.current.values()) m?.material?.dispose()
+    meshesRef.current.clear()
   }, [])
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -238,37 +245,33 @@ export default function City({ repoData, onFileSelect, selectedFile, timelapseSn
           const rx = (i % perRow) * 1.2 - perRow / 2
           const rz = Math.floor(i / perRow) * 1.2
 
-          // Full (final) height — used as the geometry height and stored in userData
-          const fullHeight = computeHeight(f.size)
-
-          const { hex } = getColorForFileType(f.path)
-          const baseColor = new THREE.Color(hex)
+          const fullHeight   = computeHeight(f.size)
+          const { hex }      = getColorForFileType(f.path)
+          const baseColor    = new THREE.Color(hex)
+          const initialScale = (timelapseSnapshot && !timelapseSnapshot.files.has(f.path))
+            ? 0.001
+            : fullHeight
 
           return (
             <mesh
               key={f.path}
-              position={[l.x + rx, fullHeight / 2, l.z + rz]}
-              castShadow
+              position={[l.x + rx, 0, l.z + rz]}
+              scale={[1, initialScale, 1]}
+              castShadow={initialScale > 0.05}
               receiveShadow
               ref={(mesh) => {
                 if (mesh) {
                   meshesRef.current.set(f.path, mesh)
-                  mesh.userData.file = f
+                  mesh.userData.file      = f
                   mesh.userData.baseColor = baseColor
-                  // Store the geometry height so the animation loop can scale correctly
-                  mesh.userData.baseHeight = fullHeight
-
-                  // If timelapse is active on mount, start invisible and non-shadow-casting
-                  if (timelapseSnapshot && !timelapseSnapshot.files.has(f.path)) {
-                    mesh.scale.y = 0.001
-                    mesh.position.y = 0
-                    mesh.visible = false
+                  if (initialScale <= 0.05) {
+                    mesh.visible    = false
                     mesh.castShadow = false
                   }
                 }
               }}
             >
-              <boxGeometry args={[1.0, fullHeight, 1.0]} />
+              <primitive object={UNIT_BOX} attach="geometry" />
               <meshStandardMaterial
                 color={baseColor}
                 metalness={0.3}

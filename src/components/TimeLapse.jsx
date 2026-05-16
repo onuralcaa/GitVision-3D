@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React from 'react'
 
 const SPEEDS = [
   { label: '0.5×', value: 0.5 },
@@ -8,18 +8,20 @@ const SPEEDS = [
 ]
 
 /**
- * TimeLapse panel — shown below the topbar when commit history is loaded.
+ * TimeLapse panel — pure display + scrubber UI.
+ * Playback advancing is driven by City's useFrame loop (not a setInterval),
+ * so commits only advance after buildings have finished animating.
  *
  * Props:
  *  snapshots    – Array<{ sha, date: Date, files: Map }>  (oldest → newest)
  *  currentIndex – number
  *  isPlaying    – bool
  *  speed        – number (multiplier)
- *  onIndexChange(i)
+ *  onIndexChange(indexOrFn)
  *  onPlayPause()
  *  onSpeedChange(v)
  *  onClose()
- *  loading      – bool  (still fetching history)
+ *  loading      – bool
  *  loadProgress – 0-100
  */
 export default function TimeLapse({
@@ -34,34 +36,8 @@ export default function TimeLapse({
   loading,
   loadProgress,
 }) {
-  const intervalRef = useRef(null)
-
-  // Auto-advance when playing
-  useEffect(() => {
-    if (!isPlaying || !snapshots || snapshots.length === 0) {
-      clearInterval(intervalRef.current)
-      return
-    }
-
-    // Advance one commit every (1000ms / speed)
-    const ms = Math.round(1000 / speed)
-    intervalRef.current = setInterval(() => {
-      onIndexChange(prev => {
-        const next = prev + 1
-        if (next >= snapshots.length) {
-          // Reached the end — stop playback
-          onPlayPause()
-          return prev
-        }
-        return next
-      })
-    }, ms)
-
-    return () => clearInterval(intervalRef.current)
-  }, [isPlaying, speed, snapshots, onIndexChange, onPlayPause])
-
-  const snapshot = snapshots?.[currentIndex]
-  const total    = snapshots?.length ?? 0
+  const snapshot  = snapshots?.[currentIndex]
+  const total     = snapshots?.length ?? 0
   const fileCount = snapshot ? snapshot.files.size : 0
 
   const formatDate = (d) => {
@@ -91,7 +67,7 @@ export default function TimeLapse({
         <button className="tl-close-btn" onClick={onClose} title="Close time-lapse">✕</button>
       </div>
 
-      {/* Controls row — only shown when data is ready */}
+      {/* Controls — only shown when data is ready */}
       {!loading && total > 0 && (
         <div className="timelapse-controls">
           {/* Play / Pause */}
@@ -103,7 +79,7 @@ export default function TimeLapse({
             {isPlaying ? '⏸' : '▶'}
           </button>
 
-          {/* Rewind to start */}
+          {/* Rewind */}
           <button
             className="tl-icon-btn"
             onClick={() => onIndexChange(0)}
@@ -113,7 +89,7 @@ export default function TimeLapse({
             ⏮
           </button>
 
-          {/* Timeline scrubber */}
+          {/* Scrubber */}
           <div className="tl-scrubber-wrap">
             <input
               type="range"
@@ -123,9 +99,7 @@ export default function TimeLapse({
               value={currentIndex}
               onChange={e => onIndexChange(Number(e.target.value))}
             />
-            <div className="tl-date-label">
-              {formatDate(snapshot?.date)}
-            </div>
+            <div className="tl-date-label">{formatDate(snapshot?.date)}</div>
           </div>
 
           {/* Skip to end */}
@@ -138,7 +112,7 @@ export default function TimeLapse({
             ⏭
           </button>
 
-          {/* Speed selector */}
+          {/* Speed */}
           <div className="tl-speed-group">
             {SPEEDS.map(s => (
               <button
@@ -151,7 +125,6 @@ export default function TimeLapse({
             ))}
           </div>
 
-          {/* Commit counter */}
           <span className="tl-counter">{currentIndex + 1} / {total}</span>
         </div>
       )}
