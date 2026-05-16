@@ -423,3 +423,259 @@ html,body,#root{height:100%;margin:0;font-family:'Segoe UI', Tahoma, Geneva, Ver
   }
 }
 
+
+/* ═══════════════════════════════════════════════════════════════
+   TIME-LAPSE
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Trigger button in topbar */
+.timelapse-trigger-btn {
+  padding: 8px 14px;
+  background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);
+  color: #1a1000;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+  transition: opacity 0.2s, box-shadow 0.2s;
+  box-shadow: 0 0 0 0 rgba(255, 210, 0, 0);
+}
+.timelapse-trigger-btn:hover {
+  opacity: 0.9;
+}
+.timelapse-trigger-btn.active {
+  background: linear-gradient(135deg, #ffd200 0%, #f7971e 100%);
+  box-shadow: 0 0 12px rgba(255, 210, 0, 0.5);
+}
+
+/* Panel bar below topbar */
+.timelapse-bar {
+  background: linear-gradient(90deg, #111 0%, #1c1c1c 100%);
+  border-bottom: 1px solid rgba(255, 210, 0, 0.3);
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: slideDown 0.25s ease;
+}
+
+.timelapse-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.timelapse-title {
+  color: #ffd200;
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.timelapse-meta {
+  color: #888;
+  font-size: 12px;
+  flex: 1;
+}
+
+.timelapse-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  color: #aaa;
+  font-size: 12px;
+}
+
+.tl-progress-track {
+  flex: 1;
+  height: 4px;
+  background: #333;
+  border-radius: 2px;
+  overflow: hidden;
+  max-width: 200px;
+}
+
+.tl-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f7971e, #ffd200);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.tl-close-btn {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px 6px;
+  transition: color 0.2s;
+  margin-left: auto;
+}
+.tl-close-btn:hover { color: #fff; }
+
+/* Controls row */
+.timelapse-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.tl-play-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid #ffd200;
+  background: transparent;
+  color: #ffd200;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, transform 0.15s;
+  flex-shrink: 0;
+  padding: 0;
+}
+.tl-play-btn:hover { background: rgba(255, 210, 0, 0.15); }
+.tl-play-btn.playing {
+  background: rgba(255, 210, 0, 0.2);
+  box-shadow: 0 0 10px rgba(255, 210, 0, 0.4);
+}
+
+.tl-icon-btn {
+  background: none;
+  border: 1px solid #444;
+  color: #aaa;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: color 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+}
+.tl-icon-btn:hover:not(:disabled) { color: #fff; border-color: #888; }
+.tl-icon-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* Scrubber */
+.tl-scrubber-wrap {
+  flex: 1;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tl-scrubber {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: #333;
+  outline: none;
+  cursor: pointer;
+  accent-color: #ffd200;
+}
+.tl-scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffd200;
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(255, 210, 0, 0.6);
+}
+.tl-scrubber::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffd200;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 6px rgba(255, 210, 0, 0.6);
+}
+
+.tl-date-label {
+  font-size: 11px;
+  color: #ffd200;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-align: center;
+}
+
+/* Speed buttons */
+.tl-speed-group {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.tl-speed-btn {
+  padding: 4px 8px;
+  border: 1px solid #444;
+  background: transparent;
+  color: #888;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+.tl-speed-btn:hover { color: #fff; border-color: #888; }
+.tl-speed-btn.active {
+  background: rgba(255, 210, 0, 0.2);
+  border-color: #ffd200;
+  color: #ffd200;
+}
+
+/* Commit counter */
+.tl-counter {
+  font-size: 11px;
+  color: #666;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Big date overlay on the 3D canvas */
+.tl-date-overlay {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 210, 0, 0.4);
+  border-radius: 8px;
+  padding: 8px 20px;
+  color: #ffd200;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  pointer-events: none;
+  backdrop-filter: blur(6px);
+  z-index: 500;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .timelapse-bar { padding: 8px 12px; gap: 8px; }
+  .tl-date-overlay { font-size: 14px; padding: 6px 14px; top: 12px; }
+  .tl-speed-group { display: none; }
+  .tl-counter { display: none; }
+  .timelapse-trigger-btn { padding: 6px 10px; font-size: 12px; }
+}
+
+@media (max-width: 480px) {
+  .tl-icon-btn { display: none; }
+  .tl-date-overlay { font-size: 12px; padding: 5px 10px; }
+}

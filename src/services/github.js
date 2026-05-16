@@ -28,6 +28,120 @@ function checkRateLimit(response) {
   }
 }
 
+/**
+ * Fetch the full commit history for a repo and build per-commit file snapshots.
+ *
+ * Strategy (API-efficient):
+ *  1. Fetch all commit SHAs + dates via paginated GET /repos/.../commits (up to maxCommits).
+ *  2. For each commit, fetch the git tree (recursive) to get every blob's path + size.
+ *  3. Return an array of snapshots sorted oldest → newest.
+ *
+ * Each snapshot: { sha, date: Date, files: Map<path, { size }> }
+ *
+ * @param {string} owner
+ * @param {string} repo
+ * @param {string} branch
+ * @param {function} onProgress  - called with (0-100)
+ * @param {number}  maxCommits   - cap to avoid rate-limit exhaustion (default 100)
+ */
+export async function fetchCommitHistory(owner, repo, branch, onProgress = null, maxCommits = 100) {
+  if (!TOKEN) {
+    throw new Error('GitHub token required. Please create a Personal Access Token at https://github.com/settings/tokens and add it to .env file as VITE_GITHUB_TOKEN')
+  }
+
+  if (onProgress) onProgress(2)
+
+  // ── Step 1: collect commit SHAs (paginated, newest first) ──────────────────
+  const allCommits = []
+  let page = 1
+  const perPage = 100
+
+  while (allCommits.length < maxCommits) {
+    let resp
+    try {
+      resp = await octokit.request('GET /repos/{owner}/{repo}/commits', {
+        owner, repo,
+        sha: branch,
+        per_page: perPage,
+        page,
+      })
+      checkRateLimit(resp)
+    } catch (e) {
+      if (e.message.includes('rate limit')) throw e
+      throw new Error(`Failed to fetch commits: ${e.message}`)
+    }
+
+    const batch = resp.data
+    if (!batch || batch.length === 0) break
+
+    for (const c of batch) {
+      allCommits.push({
+        sha: c.sha,
+        date: new Date(c.commit.committer?.date || c.commit.author?.date),
+      })
+      if (allCommits.length >= maxCommits) break
+    }
+
+    // GitHub returns commits newest-first; if we got a full page there may be more
+    if (batch.length < perPage) break
+    page++
+  }
+
+  if (allCommits.length === 0) {
+    throw new Error('No commits found for this repository.')
+  }
+
+  // Sort oldest → newest for the timeline
+  allCommits.sort((a, b) => a.date - b.date)
+
+  if (onProgress) onProgress(15)
+
+  // ── Step 2: for each commit fetch the recursive git tree ───────────────────
+  const snapshots = []
+  const total = allCommits.length
+
+  for (let i = 0; i < total; i++) {
+    const { sha, date } = allCommits[i]
+
+    let treeResp
+    try {
+      // First get the commit to find its tree SHA
+      const commitResp = await octokit.request('GET /repos/{owner}/{repo}/commits/{ref}', {
+        owner, repo, ref: sha,
+      })
+      checkRateLimit(commitResp)
+
+      const treeSha = commitResp.data.commit.tree.sha
+
+      treeResp = await octokit.request('GET /repos/{owner}/{repo}/git/trees/{tree_sha}?recursive=1', {
+        owner, repo, tree_sha: treeSha,
+      })
+      checkRateLimit(treeResp)
+    } catch (e) {
+      if (e.message.includes('rate limit')) throw e
+      // Skip commits we can't fetch (e.g. merge commits with large diffs)
+      console.debug(`Skipped commit ${sha}: ${e.message}`)
+      continue
+    }
+
+    const fileMap = new Map()
+    for (const entry of (treeResp.data.tree || [])) {
+      if (entry.type === 'blob') {
+        fileMap.set(entry.path, { size: entry.size || 0 })
+      }
+    }
+
+    snapshots.push({ sha, date, files: fileMap })
+
+    // Progress: 15% → 95%
+    if (onProgress) onProgress(15 + Math.round((80 / total) * (i + 1)))
+  }
+
+  if (onProgress) onProgress(100)
+
+  return snapshots  // Array<{ sha, date: Date, files: Map<path,{size}> }>
+}
+
 // Fetch default branch via GraphQL, then fetch tree via REST for efficiency.
 export async function fetchRepoData(owner, repo, onProgress = null){
   if (!TOKEN) {
