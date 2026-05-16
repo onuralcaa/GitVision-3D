@@ -85,8 +85,11 @@ export default function City({ repoData, onFileSelect, selectedFile, timelapseSn
         mesh.position.y = newHeight / 2
       }
 
-      // Show/hide based on whether the building has any height
-      mesh.visible = newHeight > 0.05
+      // Show/hide based on whether the building has any height.
+      // Also toggle castShadow so hidden buildings don't cast ghost shadows.
+      const isVisible = newHeight > 0.05
+      mesh.visible = isVisible
+      mesh.castShadow = isVisible
     }
 
     // ── Hover raycasting ────────────────────────────────────────────────────
@@ -255,11 +258,12 @@ export default function City({ repoData, onFileSelect, selectedFile, timelapseSn
                   // Store the geometry height so the animation loop can scale correctly
                   mesh.userData.baseHeight = fullHeight
 
-                  // If timelapse is active on mount, start invisible
+                  // If timelapse is active on mount, start invisible and non-shadow-casting
                   if (timelapseSnapshot && !timelapseSnapshot.files.has(f.path)) {
                     mesh.scale.y = 0.001
                     mesh.position.y = 0
                     mesh.visible = false
+                    mesh.castShadow = false
                   }
                 }
               }}

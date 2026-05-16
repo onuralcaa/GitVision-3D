@@ -8,19 +8,26 @@ import Legend from './components/Legend'
 import TimeLapse from './components/TimeLapse'
 import { fetchFileContent, fetchRepoData, fetchCommitHistory } from './services/github'
 
-function ShadowController() {
+function ShadowController({ timelapseActive }) {
   const { gl } = useThree()
   React.useEffect(() => {
     gl.shadowMap.enabled = true
     gl.shadowMap.type = 1 // PCFShadowMap
     gl.shadowMap.autoUpdate = true
+
+    if (timelapseActive) {
+      // Keep shadow map updating every frame during animation
+      return
+    }
+
+    // Static scene — disable auto-update after a few frames to save GPU
     let frameCount = 0
     const rafHandle = setInterval(() => {
       frameCount++
       if (frameCount > 5) gl.shadowMap.autoUpdate = false
     }, 16)
     return () => clearInterval(rafHandle)
-  }, [gl])
+  }, [gl, timelapseActive])
   return null
 }
 
@@ -262,7 +269,7 @@ export default function App() {
             shadow-camera-bottom={-100}
           />
           <directionalLight position={[-10, 5, -20]} intensity={0.3} color="#e6f2ff" />
-          <ShadowController />
+          <ShadowController timelapseActive={showTimelapse} />
           <Sky />
           <Ground />
           <Controls />
