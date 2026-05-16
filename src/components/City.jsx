@@ -141,7 +141,7 @@ const City = forwardRef(function City({
       // Not settled → dwell stays at 0, we wait for animation to finish
     }
 
-    // ── Hover raycasting ────────────────────────────────────────────────────
+    // ── Hover raycasting — runs every frame regardless of mouse movement ──────
     if (!raycaster || !camera || meshesRef.current.size === 0) return
 
     mouse.x = mousePos.current.x
@@ -160,23 +160,28 @@ const City = forwardRef(function City({
       if (hit.object.userData.file) { newHoveredPath = hit.object.userData.file.path; break }
     }
 
-    const oldPath = lastHoveredRef.current?.path
-    if (oldPath !== newHoveredPath) {
-      if (oldPath && oldPath !== selectedFile?.path) {
-        const m = meshesRef.current.get(oldPath)
-        if (m?.material) { m.material.emissiveIntensity = 0; m.material.emissive.setHex(0x000000) }
-      }
-      if (newHoveredPath && newHoveredPath !== selectedFile?.path) {
-        const m = meshesRef.current.get(newHoveredPath)
-        if (m?.material) {
-          m.material.emissiveIntensity = 0.3
-          m.material.emissive.setHex(0x00ff88)
-          setHoveredFile(m.userData.file)
-        }
-      } else {
-        setHoveredFile(null)
-      }
+    // Always update hover ref so React state stays in sync for cursor changes
+    if (lastHoveredRef.current?.path !== newHoveredPath) {
       lastHoveredRef.current = newHoveredPath ? { path: newHoveredPath } : null
+      setHoveredFile(newHoveredPath ? meshesRef.current.get(newHoveredPath)?.userData.file ?? null : null)
+    }
+
+    // Re-apply emissive state every frame so it survives snapshot resets,
+    // re-renders, and a stationary mouse (no pointer-move events firing).
+    for (const [path, m] of meshesRef.current) {
+      if (!m?.material) continue
+      const isSelected = path === selectedFile?.path
+      const isHovered  = path === newHoveredPath
+
+      if (isSelected) {
+        m.material.emissive.setHex(0x00ff88)
+        m.material.emissiveIntensity = 0.3
+      } else if (isHovered) {
+        m.material.emissive.setHex(0x00ff88)
+        m.material.emissiveIntensity = 0.2
+      } else {
+        m.material.emissiveIntensity = 0
+      }
     }
   })
 
@@ -199,14 +204,8 @@ const City = forwardRef(function City({
     const intersects = raycaster.intersectObjects(validMeshes, true)
     for (const hit of intersects) {
       if (hit.object.userData.file) {
-        const newFile = hit.object.userData.file
-        for (const m of meshesRef.current.values()) {
-          if (m?.material) { m.material.emissiveIntensity = 0; m.material.emissive.setHex(0x000000) }
-        }
-        const cm = meshesRef.current.get(newFile.path)
-        if (cm?.material) { cm.material.emissiveIntensity = 0.3; cm.material.emissive.setHex(0x00ff88) }
-        onFileSelect(newFile)
-        previousSelectedRef.current = newFile
+        onFileSelect(hit.object.userData.file)
+        previousSelectedRef.current = hit.object.userData.file
         e.stopPropagation()
         break
       }
@@ -214,24 +213,12 @@ const City = forwardRef(function City({
   }
 
   // ── Selection highlight ────────────────────────────────────────────────────
+  // Emissive state is fully managed by the useFrame loop above.
+  // We only need to track previousSelectedRef for cleanup when deselecting.
   useEffect(() => {
-    if (!selectedFile && previousSelectedRef.current) {
-      for (const m of meshesRef.current.values()) {
-        if (m?.material) { m.material.emissiveIntensity = 0; m.material.emissive.setHex(0x000000) }
-      }
-      previousSelectedRef.current = null
-    }
+    if (!selectedFile) previousSelectedRef.current = null
+    else previousSelectedRef.current = selectedFile
   }, [selectedFile])
-
-  useEffect(() => {
-    if (selectedFile) {
-      for (const m of meshesRef.current.values()) {
-        if (m?.material) { m.material.emissiveIntensity = 0; m.material.emissive.setHex(0x000000) }
-      }
-      const sel = meshesRef.current.get(selectedFile.path)
-      if (sel?.material) { sel.material.emissiveIntensity = 0.3; sel.material.emissive.setHex(0x00ff88) }
-    }
-  }, [selectedFile?.path])
 
   // ── Cleanup ────────────────────────────────────────────────────────────────
   useEffect(() => () => {
