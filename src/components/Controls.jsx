@@ -21,6 +21,11 @@ export default function Controls(){
       controlsRef.current.enablePan = true
       controlsRef.current.panSpeed = 0.8
       controlsRef.current.autoRotateSpeed = 0
+      // Prevent going below ground on mobile too
+      controlsRef.current.minPolarAngle = 0.08
+      controlsRef.current.maxPolarAngle = Math.PI / 2 - 0.05
+      controlsRef.current.minDistance = 5
+      controlsRef.current.maxDistance = 300
       
       // Touch-specific handling
       let lastTouchDistance = 0
@@ -75,7 +80,7 @@ export default function Controls(){
     <OrbitControls 
       ref={controlsRef}
       enableDamping 
-      target={[0,0,0]}
+      target={[0, 0, 0]}
       dampingFactor={0.05}
       enableZoom={true}
       zoomSpeed={1.0}
@@ -83,6 +88,14 @@ export default function Controls(){
       rotateSpeed={0.8}
       enablePan={true}
       panSpeed={0.5}
+      // Prevent camera from going below the ground plane.
+      // maxPolarAngle: just under 90° (π/2) keeps the horizon as the lowest view.
+      // minPolarAngle: 5° so the camera can't flip to a pure top-down lock.
+      minPolarAngle={0.08}
+      maxPolarAngle={Math.PI / 2 - 0.05}
+      // Prevent zooming so close that the camera clips through the ground.
+      minDistance={5}
+      maxDistance={300}
     />
   )
 }
