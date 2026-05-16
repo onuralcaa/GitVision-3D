@@ -24,27 +24,27 @@ Transform GitHub repositories into immersive 3D "Code Cities". Each file becomes
 - Interactive file type legend (collapsible) in the top-left corner
 - Mobile-friendly: pinch-to-zoom and drag navigation
 
-### ⏱ Time-Lapse Mode
+### Time-Lapse Mode
 Replay the entire commit history of a repository as a live 3D animation.
 
-- Click **⏱ Time-Lapse** in the topbar after loading a repo
+- Click **Time-Lapse** in the topbar after loading a repo
 - GitVision fetches up to 80 commits and builds a per-commit file snapshot
-- Press **▶ Play** to watch the city grow from the first commit to the latest
+- Press **Play** to watch the city grow from the first commit to the latest
 - Buildings **animate smoothly** from height 0 as files are created, and grow/shrink as files change across commits
 - Each commit transition waits for all buildings to finish animating before advancing — no jarring snaps
-- Scrub the timeline manually with the slider, or jump to start/end with ⏮ / ⏭
-- Speed control: **0.5×  1×  2×  4×**
+- Scrub the timeline manually with the slider, or jump to start/end with the skip buttons
+- Speed control: **0.5x  1x  2x  4x**
 - A large date overlay on the canvas shows the current commit date
 - Shadows update in real time as buildings emerge
 
-### 🔗 Dependency Arc Visualization
+### Dependency Arc Visualization
 Visualize the architectural dependency graph of the codebase as glowing 3D arcs.
 
 - After loading a repo, GitVision automatically parses source files in the background for `import`, `require`, `from`, `#include`, and similar statements
 - Supported languages: JavaScript, TypeScript, Python, Ruby, Rust, Go, C/C++, PHP
-- Click any building to see its dependency arcs rendered as **3D Bézier curves** arcing through the sky:
-  - **Cyan arcs** → files this file imports (outgoing dependencies)
-  - **Orange arcs** → files that import this file (incoming / used-by)
+- Click any building to see its dependency arcs rendered as **3D Bezier curves** arcing through the sky:
+  - **Cyan arcs** — files this file imports (outgoing dependencies)
+  - **Orange arcs** — files that import this file (incoming / used-by)
 - Arcs pulse with a neon glow animation
 - The info panel shows import/used-by counts as colored badges
 - Arcs respect the Time-Lapse state — only files visible at the current commit are connected
@@ -76,7 +76,7 @@ npm install
 1. Go to https://github.com/settings/tokens
 2. Click **Generate new token (classic)**
 3. Name: `GitVision 3D`
-4. Scope: ✅ `public_repo`
+4. Scope: `public_repo`
 5. Copy the generated token
 
 ### 3. Set Up Environment
@@ -99,7 +99,7 @@ Open http://localhost:5173/
 2. Click **Fetch** — a progress bar tracks the data loading
 3. The 3D city renders; hover buildings to highlight them, click to inspect
 4. Click **View** in the info panel to read the raw file content
-5. Click **⏱ Time-Lapse** to load commit history and animate the city's growth
+5. Click **Time-Lapse** to load commit history and animate the city's growth
 6. Click any building while dependency data is ready to see its import arcs
 
 ## Project Structure
