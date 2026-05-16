@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import City from './components/City'
 import Controls from './components/Controls'
@@ -6,7 +6,9 @@ import Sky from './components/Sky'
 import Ground from './components/Ground'
 import Legend from './components/Legend'
 import TimeLapse from './components/TimeLapse'
-import { fetchFileContent, fetchRepoData, fetchCommitHistory } from './services/github'
+import DependencyArcs from './components/DependencyArcs'
+import { fetchFileContent, fetchRepoData, fetchCommitHistory, fetchFilesContent } from './services/github'
+import { buildDependencyMap, PARSEABLE_EXTENSIONS } from './utils/dependencyParser'
 
 function ShadowController({ timelapseActive }) {
   const { gl } = useThree()
@@ -45,6 +47,12 @@ export default function App() {
   const [isMobile, setIsMobile]         = useState(false)
   const [shadowsEnabled, setShadowsEnabled] = useState(false)
 
+  // ── Dependency graph state ─────────────────────────────────────────────────
+  const cityRef                               = useRef(null)   // forwarded meshesRef
+  const [depMap, setDepMap]                   = useState(null) // Map<path, Set<path>>
+  const [depLoading, setDepLoading]           = useState(false)
+  const [depProgress, setDepProgress]         = useState(0)
+
   // ── Time-lapse state ───────────────────────────────────────────────────────
   const [showTimelapse, setShowTimelapse]       = useState(false)
   const [tlLoading, setTlLoading]               = useState(false)
@@ -82,6 +90,25 @@ export default function App() {
       setData(d)
       setShadowsEnabled(true)
       setProgress(100)
+
+      // ── Kick off dependency graph fetch in the background ──────────────────
+      setDepMap(null)
+      setDepLoading(true)
+      setDepProgress(0)
+      const parseablePaths = d.files
+        .filter(f => {
+          const ext = f.path.match(/\.[^.]+$/)?.[0]?.toLowerCase() ?? ''
+          return PARSEABLE_EXTENSIONS.has(ext)
+        })
+        .map(f => f.path)
+
+      fetchFilesContent(d.owner, d.repo, parseablePaths, d.branch, (p) => setDepProgress(p))
+        .then(contentMap => {
+          const map = buildDependencyMap(d.files, contentMap)
+          setDepMap(map)
+        })
+        .catch(err => console.warn('Dependency fetch failed:', err.message))
+        .finally(() => setDepLoading(false))
     } catch (err) {
       console.error(err)
       setError(err.message || 'Veri alınırken hata')
@@ -103,6 +130,9 @@ export default function App() {
     setError('')
     setLoading(false)
     setShadowsEnabled(false)
+    setDepMap(null)
+    setDepLoading(false)
+    setDepProgress(0)
     setShowTimelapse(false)
     setSnapshots(null)
     setTlIndex(0)
@@ -287,6 +317,7 @@ export default function App() {
           <Controls />
           {data && (
             <City
+              ref={cityRef}
               repoData={data}
               onFileSelect={setSelectedFile}
               selectedFile={selectedFile}
@@ -294,6 +325,14 @@ export default function App() {
               isPlaying={tlPlaying}
               tlSpeed={tlSpeed}
               onAdvanceCommit={handleAdvanceCommit}
+            />
+          )}
+          {data && depMap && (
+            <DependencyArcs
+              depMap={depMap}
+              meshesRef={cityRef}
+              selectedFile={selectedFile}
+              timelapseSnapshot={activeSnapshot}
             />
           )}
         </Canvas>
@@ -335,6 +374,20 @@ export default function App() {
               )}
             </div>
             <button className="inspect-btn" onClick={handleInspectFile}>View</button>
+            {depLoading && (
+              <div className="dep-loading-hint">⏳ Analysing dependencies…</div>
+            )}
+            {depMap && selectedFile && (() => {
+              const out = depMap.get(selectedFile.path)?.size ?? 0
+              const inc = [...depMap.values()].filter(s => s.has(selectedFile.path)).length
+              if (out + inc === 0) return null
+              return (
+                <div className="dep-summary">
+                  {out > 0 && <span className="dep-out">→ {out} import{out !== 1 ? 's' : ''}</span>}
+                  {inc > 0 && <span className="dep-in">← {inc} used by</span>}
+                </div>
+              )
+            })()}
             <div className="hint">
               {isMobile
                 ? 'Dokunup sürükleyin / İki parmakla yakınlaştırın'

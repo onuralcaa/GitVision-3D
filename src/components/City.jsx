@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef, useEffect } from 'react'
+import React, { useMemo, useState, useRef, useEffect, useImperativeHandle, forwardRef } from 'react'
 import { useThree, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { getColorForFileType } from '../utils/fileTypeColors'
@@ -23,17 +23,15 @@ const SETTLE_THRESHOLD = 0.015
 // the dwell window, slow enough to look like a smooth grow.
 const LERP_SPEED = 8
 
-export default function City({
+const City = forwardRef(function City({
   repoData,
   onFileSelect,
   selectedFile,
   timelapseSnapshot,
-  // Playback props — the frame loop drives commit advancing so animation
-  // always completes before the next snapshot is applied.
   isPlaying,
   tlSpeed,
   onAdvanceCommit,
-}) {
+}, ref) {
   const { camera, raycaster, mouse } = useThree()
   const [hoveredFile, setHoveredFile] = useState(null)
   const meshesRef        = useRef(new Map())  // Map<path, THREE.Mesh>
@@ -45,6 +43,11 @@ export default function City({
   // How long (seconds) we have been dwelling on the current settled state
   const dwellRef   = useRef(0)
   const settledRef = useRef(true)
+
+  // Expose meshesRef to parent via forwarded ref
+  useImperativeHandle(ref, () => ({
+    getMeshes: () => meshesRef.current,
+  }), [])
 
   // ── Layout ─────────────────────────────────────────────────────────────────
   const groups = useMemo(() => {
@@ -285,4 +288,6 @@ export default function City({
       )}
     </group>
   )
-}
+})
+
+export default City

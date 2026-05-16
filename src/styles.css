@@ -679,3 +679,43 @@ html,body,#root{height:100%;margin:0;font-family:'Segoe UI', Tahoma, Geneva, Ver
   .tl-icon-btn { display: none; }
   .tl-date-overlay { font-size: 12px; padding: 5px 10px; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   DEPENDENCY ARCS
+   ═══════════════════════════════════════════════════════════════ */
+
+.dep-loading-hint {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #888;
+  font-style: italic;
+}
+
+.dep-summary {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #333;
+  flex-wrap: wrap;
+}
+
+.dep-out {
+  font-size: 11px;
+  font-weight: 700;
+  color: #00f2fe;
+  background: rgba(0, 242, 254, 0.1);
+  border: 1px solid rgba(0, 242, 254, 0.3);
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+.dep-in {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ff6b35;
+  background: rgba(255, 107, 53, 0.1);
+  border: 1px solid rgba(255, 107, 53, 0.3);
+  border-radius: 4px;
+  padding: 2px 8px;
+}

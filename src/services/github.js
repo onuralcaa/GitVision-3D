@@ -236,6 +236,56 @@ export async function fetchRepoData(owner, repo, onProgress = null){
   return { owner, repo, branch, files }
 }
 
+/**
+ * Batch-fetch raw content for a list of file paths.
+ * Used to build the dependency map without per-file API calls in the hot path.
+ *
+ * Fetches up to maxFiles files concurrently in small batches to stay within
+ * rate limits. Returns a Map<path, content string>.
+ *
+ * @param {string}   owner
+ * @param {string}   repo
+ * @param {string[]} paths
+ * @param {string}   branch
+ * @param {function} onProgress  - called with (0-100)
+ * @param {number}   maxFiles    - cap (default 120)
+ */
+export async function fetchFilesContent(owner, repo, paths, branch, onProgress = null, maxFiles = 120) {
+  if (!TOKEN) {
+    throw new Error('GitHub token required.')
+  }
+
+  const limited   = paths.slice(0, maxFiles)
+  const total     = limited.length
+  const result    = new Map()
+  const batchSize = 5  // concurrent requests
+
+  for (let i = 0; i < total; i += batchSize) {
+    const batch = limited.slice(i, i + batchSize)
+    await Promise.all(batch.map(async (path) => {
+      try {
+        const response = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
+          owner, repo, path, ref: branch,
+          headers: { accept: 'application/vnd.github.raw+json' },
+        })
+        const text = typeof response.data === 'string'
+          ? response.data
+          : response.data?.content
+            ? atob(response.data.content.replace(/\n/g, ''))
+            : ''
+        result.set(path, text)
+      } catch (e) {
+        // Skip files we can't fetch (binary, too large, etc.)
+        console.debug(`Skipped content for ${path}: ${e.message}`)
+      }
+    }))
+
+    if (onProgress) onProgress(Math.round(((i + batchSize) / total) * 100))
+  }
+
+  return result
+}
+
 export async function fetchFileContent(owner, repo, path, branch){
   if (!TOKEN) {
     throw new Error('GitHub token required. Please create a Personal Access Token at https://github.com/settings/tokens and add it to .env file as VITE_GITHUB_TOKEN')
